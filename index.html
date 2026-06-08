@@ -159,17 +159,18 @@ info.onAdd = function () {
     this._div = L.DomUtil.create('div', 'info');
     return this._div;
 };
-
+// 🌧️ 🌦️ ⛅ 🌡️ 🌪️ 💨 🔵🌡️ 🔴🌡️ 💨 🌬️ ☀️
 info.update = function (props) {
     if (props) {
         this._div.style.display = 'block';
         this._div.innerHTML =
             '<span style="font-weight:bold; font-size:16px;">Prévisions_météo_du_jour</span><br>' +
-            '<b>Région : ' + props.NAME_1 + '</b><br>' +
-            '<b>Tmax :</b> ' + props.Tmax + ' °C<br>' +
-            '<b>Tmin :</b> ' + props.Tmin + ' °C<br>' +
-            '<b>Vent :</b> ' + props.Dirct_Vent + '<br>' +
-            '<b>Ciel :</b> ' + props.Etat_ciel;
+            '<b>Département : ' + props.NAME_2 + '</b><br>' +
+            '<b>Tmax : 🔴🌡️ </b> ' + props.Tmax + ' °C 🔺<br>' +
+            '<b>Tmin : 🔵🌡️ </b> ' + props.Tmin + ' °C 🔻<br>' +
+            '<b>Vent : 🧭 </b> ' + props.Vent + '<br>' +
+            '<b>Force_vent : 🌬️ </b> ' + props.Force_vent + '<br>' +
+            '<b>Etat_ciel : </b> ' + props.Etat_ciel;
     } else {
         this._div.style.display = 'none';
     }
