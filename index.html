@@ -2,51 +2,85 @@
 <html lang="fr">
 <head>
 <meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
 <title>Prévision météo – Sénégal</title>
-
-<h2 id="titre-periode" align="center"></h2>
-
-<link rel="stylesheet" href="leaflet.css">
-<script src="leaflet.js"></script>
-
 
 <link rel="stylesheet" href="leaflet.css">
 <script src="leaflet.js"></script>
 
 <style>
+/* ===================== RESET DE BASE ===================== */
+* {
+    box-sizing: border-box;
+    -webkit-tap-highlight-color: transparent;
+}
+
+html, body {
+    margin: 0;
+    padding: 0;
+    height: 100%;
+    overflow: hidden;
+}
+
+/* ===================== TITRE ===================== */
+#titre-periode {
+    margin: 0;
+    padding: 10px 8px;
+    font: bold 18px Arial, Helvetica, sans-serif;
+    background: #ffffff;
+    border-bottom: 1px solid #ddd;
+}
+
 /* ===================== MESSAGE HAUT DROIT ===================== */
 .message-info {
     background: rgba(255,255,255,0.95);
-    padding: 12px 14px;
-    font: 16px Arial, Helvetica, sans-serif; /* ⬅️ taille augmentée */
+    padding: 10px 12px;
+    font: 14px Arial, Helvetica, sans-serif;
     border-radius: 6px;
     box-shadow: 0 0 12px rgba(0,0,0,0.2);
-    max-width: 260px;
+    max-width: 220px;
     text-align: center;
 }
 
 .message-info b {
-    font-size: 18px; /* ⬅️ titres plus grands */
+    font-size: 15px;
 }
 
+/* Bouton de fermeture du message info (utile sur mobile, ça prend de la place) */
+.message-info .fermer-msg {
+    position: absolute;
+    top: 2px;
+    right: 6px;
+    cursor: pointer;
+    font-weight: bold;
+    font-size: 16px;
+    color: #555;
+    line-height: 1;
+    padding: 2px 6px;
+}
 
 /* ===================== MAP ===================== */
 #map {
     width: 100%;
-    height: 90vh;
+    height: calc(100vh - 46px); /* 46px ~ hauteur du titre */
+    touch-action: none; /* Leaflet gère lui-même le pan/zoom tactile */
 }
 
-/* ===================== INFO ===================== */
+/* ===================== INFO (popup flottante au survol/tap) ===================== */
 .info {
     position: absolute;
     pointer-events: none;
-    padding: 8px;
+    padding: 10px 12px;
     font: 14px Arial, Helvetica, sans-serif;
-    background: rgba(255,255,255,0.95);
-    box-shadow: 0 0 15px rgba(0,0,0,0.2);
-    border-radius: 5px;
+    background: rgba(255,255,255,0.97);
+    box-shadow: 0 0 15px rgba(0,0,0,0.25);
+    border-radius: 8px;
     display: none;
     z-index: 1000;
+    max-width: 220px;
+    line-height: 1.4;
 }
 
 /* ===================== LÉGENDE (PC par défaut) ===================== */
@@ -68,14 +102,39 @@
     opacity: 0.85;
 }
 
-/* ===================== MODE MOBILE ===================== */
+/* Bouton +/- de zoom plus gros pour les doigts */
+.leaflet-touch .leaflet-bar a {
+    width: 36px;
+    height: 36px;
+    line-height: 36px;
+    font-size: 20px;
+}
+
+/* ===================== MODE TABLETTE ===================== */
+@media (max-width: 1024px) {
+    .message-info {
+        max-width: 190px;
+        font-size: 13px;
+    }
+}
+
+/* ===================== MODE MOBILE (téléphone) ===================== */
 @media (max-width: 768px) {
+
+    #titre-periode {
+        font-size: 14px;
+        padding: 8px 6px;
+    }
+
+    #map {
+        height: calc(100vh - 40px);
+    }
 
     .legend {
         font-size: 11px;
         line-height: 14px;
         padding: 6px 8px;
-        max-width: 95%;
+        max-width: 92%;
     }
 
     .legend i {
@@ -89,41 +148,83 @@
         right: 50% !important;
         transform: translateX(50%);
     }
+
+    /* Message info repositionné et réduit, pour ne pas gêner la lecture de la carte */
+    .message-info {
+        max-width: 70vw;
+        font-size: 12px;
+        padding: 8px 26px 8px 10px;
+    }
+
+    .info {
+        font-size: 13px;
+        max-width: 75vw;
+        padding: 8px 10px;
+    }
+}
+
+/* ===================== TRÈS PETITS ÉCRANS (mobile portrait étroit) ===================== */
+@media (max-width: 380px) {
+    #titre-periode {
+        font-size: 12px;
+    }
+    .legend {
+        font-size: 10px;
+        max-width: 85%;
+    }
+}
+
+/* ===================== MODE PAYSAGE MOBILE ===================== */
+@media (max-width: 900px) and (orientation: landscape) {
+    #map {
+        height: calc(100vh - 34px);
+    }
+    #titre-periode {
+        font-size: 12px;
+        padding: 6px 6px;
+    }
 }
 </style>
 </head>
 
-
-<script>
-    function formatDateFR(date) {
-        const jour = String(date.getDate()).padStart(2, '0');
-        const mois = String(date.getMonth() + 1).padStart(2, '0');
-        const annee = date.getFullYear();
-        return `${jour}-${mois}-${annee}`;
-    }
-    
-    const aujourdHui = new Date();
-    const demain = new Date(aujourdHui);
-    demain.setDate(aujourdHui.getDate() + 1);
-    
-    document.getElementById("titre-periode").innerHTML =
-        `Prévision à courte échéance valable du ${formatDateFR(aujourdHui)} à 12H au ${formatDateFR(demain)} à 12H`;
-    </script>
-    
-
-
 <body>
+
+<h2 id="titre-periode" align="center"></h2>
 
 <div id="map"></div>
 
 <script src="Bulletin_meteo.js"></script>
 
 <script>
+// ===================== TITRE DYNAMIQUE =====================
+function formatDateFR(date) {
+    const jour = String(date.getDate()).padStart(2, '0');
+    const mois = String(date.getMonth() + 1).padStart(2, '0');
+    const annee = date.getFullYear();
+    return `${jour}-${mois}-${annee}`;
+}
+
+const aujourdHui = new Date();
+const demain = new Date(aujourdHui);
+demain.setDate(aujourdHui.getDate() + 1);
+
+document.getElementById("titre-periode").innerHTML =
+    `Prévision à courte échéance valable du ${formatDateFR(aujourdHui)} à 12H au ${formatDateFR(demain)} à 12H`;
+
+// ===================== DÉTECTION TACTILE =====================
+var estTactile = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
+
 // ===================== CARTE =====================
-var map = L.map('map').setView([14.5, -14.5], 7);
+var map = L.map('map', {
+    tap: true,            // active le comportement "tap" sur mobile (Leaflet)
+    zoomControl: true,
+    minZoom: 5,
+    maxZoom: 12
+}).setView([14.5, -14.5], 7);
 
 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    attribution: '&copy; OpenStreetMap contributors'
+    attribution: '&copy; OpenStreetMap contributors',
+    maxZoom: 19
 }).addTo(map);
 
 L.control.scale().addTo(map);
@@ -159,12 +260,12 @@ info.onAdd = function () {
     this._div = L.DomUtil.create('div', 'info');
     return this._div;
 };
-// 🌧️ 🌦️ ⛅ 🌡️ 🌪️ 💨 🔵🌡️ 🔴🌡️ 💨 🌬️ ☀️
+
 info.update = function (props) {
     if (props) {
         this._div.style.display = 'block';
         this._div.innerHTML =
-            '<span style="font-weight:bold; font-size:16px;">Prévisions_météo_du_jour</span><br>' +
+            '<span style="font-weight:bold; font-size:15px;">Prévisions_météo_du_jour</span><br>' +
             '<b>Département : ' + props.NAME_2 + '</b><br>' +
             '<b>Tmax : 🔴🌡️ </b> ' + props.Tmax + ' °C 🔺<br>' +
             '<b>Tmin : 🔵🌡️ </b> ' + props.Tmin + ' °C 🔻<br>' +
@@ -178,11 +279,40 @@ info.update = function (props) {
 
 info.addTo(map);
 
-map.on('mousemove', function (e) {
+// Positionnement de la popup d'info : suit la souris sur PC, suit le doigt sur mobile
+function positionnerInfo(x, y) {
     var d = document.querySelector('.info');
-    if (d) {
-        d.style.left = (e.containerPoint.x + 15) + 'px';
-        d.style.top  = (e.containerPoint.y - 15) + 'px';
+    if (!d) return;
+
+    var mapEl = document.getElementById('map');
+    var largeurCarte = mapEl.clientWidth;
+    var hauteurCarte = mapEl.clientHeight;
+    var largeurInfo = d.offsetWidth || 220;
+    var hauteurInfo = d.offsetHeight || 120;
+
+    var posX = x + 15;
+    var posY = y - 15;
+
+    // Empêche la popup de sortir à droite
+    if (posX + largeurInfo > largeurCarte) {
+        posX = x - largeurInfo - 15;
+    }
+    // Empêche la popup de sortir en haut
+    if (posY < 0) {
+        posY = y + 15;
+    }
+    // Empêche la popup de sortir en bas
+    if (posY + hauteurInfo > hauteurCarte) {
+        posY = hauteurCarte - hauteurInfo - 10;
+    }
+
+    d.style.left = posX + 'px';
+    d.style.top  = posY + 'px';
+}
+
+map.on('mousemove', function (e) {
+    if (!estTactile) {
+        positionnerInfo(e.containerPoint.x, e.containerPoint.y);
     }
 });
 
@@ -201,9 +331,30 @@ function resetHighlight(e) {
 
 function onEachFeature(feature, layer) {
     layer.on({
-        mouseover: highlightFeature,
-        mouseout: resetHighlight,
-        click: function(e){ map.fitBounds(e.target.getBounds()); }
+        mouseover: function (e) {
+            if (!estTactile) highlightFeature(e);
+        },
+        mouseout: function (e) {
+            if (!estTactile) resetHighlight(e);
+        },
+        click: function (e) {
+            // Sur mobile/tactile : le tap affiche les infos au lieu du survol
+            if (estTactile) {
+                // Si une autre région était en surbrillance, on la réinitialise
+                geojson.eachLayer(function (l) {
+                    if (l !== e.target) geojson.resetStyle(l);
+                });
+                highlightFeature(e);
+                positionnerInfo(e.containerPoint.x, e.containerPoint.y);
+
+                // Masque automatiquement la popup après quelques secondes sur mobile
+                clearTimeout(window._infoTimeout);
+                window._infoTimeout = setTimeout(function () {
+                    resetHighlight(e);
+                }, 6000);
+            }
+            map.fitBounds(e.target.getBounds());
+        }
     });
 }
 
@@ -212,6 +363,13 @@ var geojson = L.geoJson(Bulletin_meteo, {
     style: Monstyle,
     onEachFeature: onEachFeature
 }).addTo(map);
+
+// Sur tactile, un tap sur le fond de carte (hors région) referme l'info
+map.on('click', function (e) {
+    if (estTactile && !e.originalEvent.target.closest('path')) {
+        info.update();
+    }
+});
 
 // ===================== LÉGENDE RESPONSIVE =====================
 var legendTmax = L.control({ position: 'bottomright' });
@@ -243,25 +401,44 @@ L.imageOverlay('logo.png', [
     [15.5, -18.0]
 ], { opacity: 0.8 }).addTo(map);
 
-//===========================
 // ===================== MESSAGE D'INFORMATION (HAUT DROIT) =====================
 var messageInfo = L.control({ position: 'topright' });
 
 messageInfo.onAdd = function () {
     var div = L.DomUtil.create('div', 'message-info');
-    div.innerHTML = 
+    div.style.position = 'relative';
+
+    var texte = estTactile
+        ? 'Touchez une région pour voir les prévisions du jour !'
+        : 'Survoler une région pour voir les prévisions du jour !';
+
+    div.innerHTML =
+        '<span class="fermer-msg" title="Fermer">&times;</span>' +
         '<b>ℹ️ Information</b><br>' +
-        'Survoler une région pour voir les prévisions du jour !<br>' +
+        texte + '<br>' +
         '<b>Merci !!</b>';
-    
-    // Empêche la carte de bouger quand on clique dessus
+
+    // Empêche la carte de bouger quand on clique/touche dessus
     L.DomEvent.disableClickPropagation(div);
+
+    // Permet de fermer le message (pratique sur petit écran mobile)
+    var btnFermer = div.querySelector('.fermer-msg');
+    L.DomEvent.on(btnFermer, 'click', function () {
+        div.style.display = 'none';
+    });
+
     return div;
 };
 
 messageInfo.addTo(map);
 
-//===========================
+// ===================== AJUSTEMENT AUTOMATIQUE AU CHANGEMENT D'ORIENTATION =====================
+window.addEventListener('resize', function () {
+    map.invalidateSize();
+});
+window.addEventListener('orientationchange', function () {
+    setTimeout(function () { map.invalidateSize(); }, 200);
+});
 </script>
 </body>
 </html>
